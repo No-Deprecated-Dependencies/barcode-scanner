@@ -51,6 +51,9 @@ if (video) {
         video,
     })
 
+    const canvas = document.createElement('canvas')
+    const canvasContext = canvas.getContext('2d')
+
     window.addEventListener('barcode-scanner:decode-frame', (event) => {
         if (!(event instanceof CustomEvent) || !event.detail || !event.detail.imageData) {
             return
@@ -58,10 +61,9 @@ if (video) {
 
         const { imageData } = event.detail as { imageData: ImageData }
 
-        const canvas = document.createElement('canvas')
         canvas.width = imageData.width
         canvas.height = imageData.height
-        canvas.getContext('2d')?.putImageData(imageData, 0, 0)
+        canvasContext?.putImageData(imageData, 0, 0)
 
         const img = document.querySelector<HTMLImageElement>('[data-id="decode-frame-image"]')
         if (img) {

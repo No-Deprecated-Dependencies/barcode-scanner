@@ -14,11 +14,14 @@ class BarcodeScanner {
     private isDestroyed: boolean
     private onDecode: (result: string, area: Point2D[]) => void
     private onDecodeError?: (error: string) => void
+    private onVisibilityChange: () => void
     private requestFrame: (callback: () => void) => number
     private resizeObserver: ResizeObserver
     private scanArea: { height: number; width: number; x: number; y: number }
     private scanRate: number
     private video: HTMLVideoElement
+    private videoActive: boolean
+    private videoPaused: boolean
     private worker: Worker
 
     constructor({
@@ -85,12 +88,26 @@ class BarcodeScanner {
         this.video.hidden = false
         this.video.muted = true
         this.video.playsInline = true
+        this.videoActive = false
+        this.videoPaused = false
 
         this.resizeObserver = new ResizeObserver(() => {
             this.scanArea = this.getScanArea(this.video)
             this.render()
         })
         this.resizeObserver.observe(this.video)
+
+        this.onVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                this.pause()
+            } else {
+                if (this.videoPaused) {
+                    this.start()
+                }
+            }
+        }
+
+        document.addEventListener('visibilitychange', this.onVisibilityChange)
 
         /**
          * Setup worker
@@ -141,6 +158,9 @@ class BarcodeScanner {
         }
 
         await this.stop()
+
+        document.removeEventListener('visibilitychange', this.onVisibilityChange)
+
         this.resizeObserver.disconnect()
         this.worker.terminate()
         this.isDestroyed = true
@@ -266,7 +286,29 @@ class BarcodeScanner {
     }
 
     public pause(): void {
-        this.video.pause()
+        this.canvas.height = this.video.videoHeight
+        this.canvas.width = this.video.videoWidth
+        this.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height)
+        this.canvasContext.drawImage(
+            this.video,
+            0,
+            0,
+            this.canvas.width,
+            this.canvas.height,
+            0,
+            0,
+            this.canvas.width,
+            this.canvas.height,
+        )
+
+        this.video.poster = this.canvas.toDataURL()
+
+        if (this.video.srcObject instanceof MediaStream) {
+            this.video.srcObject.getTracks().forEach((track) => track.stop())
+        }
+
+        this.video.srcObject = null
+        this.videoPaused = true
     }
 
     public async start({ facingMode = 'environment' }: { facingMode?: 'environment' | 'user' } = {}): Promise<void> {
@@ -291,6 +333,8 @@ class BarcodeScanner {
         this.facingMode = facingMode
         this.scanArea = this.getScanArea(this.video)
         this.video.style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'none'
+        this.videoActive = true
+        this.videoPaused = false
         this.render()
         this.decodeFrame()
     }
@@ -301,10 +345,17 @@ class BarcodeScanner {
         }
 
         this.video.srcObject = null
+        this.videoActive = false
+        this.videoPaused = false
     }
 
     private decodeFrame(): void {
-        if (this.isDestroyed) {
+        // prettier-ignore
+        if (
+            this.isDestroyed ||
+            this.videoActive === false ||
+            this.videoPaused
+        ) {
             return
         }
 

@@ -5,7 +5,7 @@ export default defineConfig({
     build: {
         copyPublicDir: false,
         lib: {
-            entry: path.resolve(__dirname, 'src/lib/barcode-decoder.ts'),
+            entry: path.resolve(__dirname, 'src/lib/barcode-scanner.ts'),
             formats: ['es'],
         },
         rollupOptions: {
