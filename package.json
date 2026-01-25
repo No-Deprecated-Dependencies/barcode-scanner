@@ -1,7 +1,14 @@
 {
     "name": "barcode-scanner",
     "version": "0.1.0",
-    "private": true,
+    "private": false,
+    "homepage": "https://github.com/asaenko01/barcode-scanner",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/asaenko01/barcode-scanner.git"
+    },
+    "license": "MIT",
+    "author": "Aleksei Saenko",
     "type": "module",
     "scripts": {
         "build": "vite build && tsc -b",
