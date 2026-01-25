@@ -1,15 +1,31 @@
 {
-    "name": "barcode-scanner",
+    "name": "@nddeps/barcode-scanner",
     "version": "0.1.0",
     "private": false,
-    "homepage": "https://github.com/asaenko01/barcode-scanner",
+    "keywords": [
+        "barcode",
+        "scanner",
+        "barcode-scanner"
+    ],
+    "homepage": "https://github.com/No-Deprecated-Dependencies/barcode-scanner",
     "repository": {
         "type": "git",
-        "url": "https://github.com/asaenko01/barcode-scanner.git"
+        "url": "https://github.com/No-Deprecated-Dependencies/barcode-scanner.git"
     },
     "license": "MIT",
     "author": "Aleksei Saenko",
     "type": "module",
+    "exports": {
+        ".": {
+            "types": "dist/index.d.ts",
+            "import": "dist/index.js"
+        }
+    },
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
     "scripts": {
         "build": "vite build && tsc -b",
         "dev": "vite",

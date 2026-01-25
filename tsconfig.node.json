@@ -22,5 +22,5 @@
         "useDefineForClassFields": true,
         "verbatimModuleSyntax": true
     },
-    "include": ["src/lib/barcode-scanner.ts", "src/lib/barcode-scanner.worker.ts"]
+    "include": ["src/lib/index.ts"]
 }

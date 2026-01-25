@@ -10,31 +10,12 @@ export type ScanArea = {
     x: number
     y: number
 }
-
-/**
- * Worker request sent to the worker thread
- */
 export type WorkerRequest = {
-    /**
-     * The image data to decode
-     */
     data: ImageData | null
-    /**
-     * The request UUID
-     */
     uuid: string
 }
 
-/**
- * Worker response sent from the worker thread
- */
 export type WorkerResponse = {
-    /**
-     * The detected barcode
-     */
     data: DetectedBarcode | null
-    /**
-     * The request UUID
-     */
     uuid: string
 }
