@@ -1,4 +1,4 @@
-import { BarcodeScanner } from './lib'
+import { BarcodeScanner, convertElementAreaToVideoArea } from './lib'
 import './main.css'
 
 const video = document.querySelector<HTMLVideoElement>('[data-id="video"]')
@@ -24,23 +24,15 @@ if (video && videoRenderer) {
                 return
             }
 
-            const scanAreaPosition = area ?? barcodeScanner.getScanAreaPosition()
-
-            document.documentElement.style.setProperty(
-                '--barcode-scanner-area-x',
-                `${scanAreaPosition.x}px`,
-            )
-            document.documentElement.style.setProperty(
-                '--barcode-scanner-area-y',
-                `${scanAreaPosition.y}px`,
-            )
+            document.documentElement.style.setProperty('--barcode-scanner-area-x', `${area.x}px`)
+            document.documentElement.style.setProperty('--barcode-scanner-area-y', `${area.y}px`)
             document.documentElement.style.setProperty(
                 '--barcode-scanner-area-width',
-                `${scanAreaPosition.width}px`,
+                `${area.width}px`,
             )
             document.documentElement.style.setProperty(
                 '--barcode-scanner-area-height',
-                `${scanAreaPosition.height}px`,
+                `${area.height}px`,
             )
 
             if (data) {
@@ -58,14 +50,14 @@ if (video && videoRenderer) {
         },
         options: {
             calcScanArea(video) {
-                const size = Math.round((2 / 3) * Math.min(video.offsetWidth, video.offsetHeight))
+                const size = (2 / 3) * Math.min(video.offsetWidth, video.offsetHeight)
 
-                return {
+                return convertElementAreaToVideoArea(video, {
                     height: size,
                     width: size,
-                    x: Math.round((video.offsetWidth - size) / 2),
-                    y: Math.round((video.offsetHeight - size) / 2),
-                }
+                    x: (video.offsetWidth - size) / 2,
+                    y: (video.offsetHeight - size) / 2,
+                })
             },
             debug: true,
             scanRate: 24,

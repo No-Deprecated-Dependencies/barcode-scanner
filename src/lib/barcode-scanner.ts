@@ -7,7 +7,7 @@ import type {
     WorkerResponse,
 } from './barcode-scanner.types'
 
-import { getVideoPosition, getVideoScaledSize } from './utils'
+import { convertVideoAreaToElementArea } from './utils'
 
 class BarcodeScanner {
     private calcScanArea: (video: HTMLVideoElement) => ScanArea
@@ -22,7 +22,6 @@ class BarcodeScanner {
     private onDecodeError?: OnDecodeError
     private onVisibilityChange: () => void
     private requestFrame: (callback: () => void) => number
-    private resizeObserver: ResizeObserver
     private resumeOnVisibilityChange: boolean
     private scanArea: ScanArea
     private scanRate: number
@@ -94,11 +93,6 @@ class BarcodeScanner {
         this.video.playsInline = true
         this.videoActive = false
         this.videoPaused = false
-
-        this.resizeObserver = new ResizeObserver(() => {
-            this.scanArea = this.calcScanArea(video)
-        })
-        this.resizeObserver.observe(this.video)
 
         this.onVisibilityChange = () => {
             if (document.visibilityState === 'hidden') {
@@ -174,7 +168,6 @@ class BarcodeScanner {
 
         document.removeEventListener('visibilitychange', this.onVisibilityChange)
 
-        this.resizeObserver.disconnect()
         this.worker.terminate()
         this.isDestroyed = true
     }
@@ -206,49 +199,6 @@ class BarcodeScanner {
             width: size,
             x: Math.round((video.videoWidth - size) / 2),
             y: Math.round((video.videoHeight - size) / 2),
-        }
-    }
-
-    public getScanAreaPosition(scanArea: ScanArea = this.scanArea): ScanArea {
-        const isMirrored = /scaleX\(-1\)/.test(this.video.style.transform)
-        const elementWidth = this.video.offsetWidth
-        const elementHeight = this.video.offsetHeight
-        const videoHeight = this.video.videoHeight
-        const videoWidth = this.video.videoWidth
-        const videoScaledSize = getVideoScaledSize(this.video)
-        const videoPosition = getVideoPosition(this.video, videoScaledSize)
-
-        const x = Math.max(
-            0,
-            Math.min(
-                isMirrored
-                    ? videoPosition.x +
-                          ((videoWidth - scanArea.x) / videoWidth) * videoScaledSize.width
-                    : videoPosition.x + (scanArea.x / videoWidth) * videoScaledSize.width,
-                elementWidth,
-            ),
-        )
-        const y = Math.max(
-            0,
-            Math.min(
-                videoPosition.y + (scanArea.y / videoHeight) * videoScaledSize.height,
-                elementHeight,
-            ),
-        )
-        const width = Math.min(
-            (scanArea.width / videoWidth) * videoScaledSize.width,
-            elementWidth - x,
-        )
-        const height = Math.min(
-            (scanArea.height / videoHeight) * videoScaledSize.height,
-            elementHeight - y,
-        )
-
-        return {
-            height: Math.max(0, height),
-            width: Math.max(0, width),
-            x,
-            y,
         }
     }
 
@@ -324,7 +274,6 @@ class BarcodeScanner {
             await this.video.play()
         }
 
-        this.scanArea = this.calcScanArea(this.video)
         this.video.style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'none'
         this.videoActive = true
         this.videoPaused = false
@@ -372,6 +321,7 @@ class BarcodeScanner {
 
             this.isDecodeFrameProcessed = true
 
+            this.scanArea = this.calcScanArea(this.video)
             this.canvas.height = this.scanArea.height
             this.canvas.width = this.scanArea.width
             this.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height)
@@ -412,7 +362,7 @@ class BarcodeScanner {
 
                         this.onDecode(
                             data.rawValue,
-                            this.getScanAreaPosition({
+                            convertVideoAreaToElementArea(this.video, {
                                 height: Math.max(...cornerPointsY) - Math.min(...cornerPointsY),
                                 width: Math.max(...cornerPointsX) - Math.min(...cornerPointsX),
                                 x: Math.min(...cornerPointsX) + this.scanArea.x,
@@ -420,7 +370,10 @@ class BarcodeScanner {
                             }),
                         )
                     } else {
-                        this.onDecode(null)
+                        this.onDecode(
+                            null,
+                            convertVideoAreaToElementArea(this.video, this.scanArea),
+                        )
                     }
                 })
                 .catch(() => {

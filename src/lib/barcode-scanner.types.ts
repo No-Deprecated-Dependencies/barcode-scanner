@@ -1,6 +1,6 @@
 import type { DetectedBarcode } from './barcode-detector.type'
 
-export type OnDecode = (data: null | string, area?: ScanArea) => void
+export type OnDecode = (data: null | string, area: ScanArea) => void
 
 export type OnDecodeError = () => void
 
