@@ -1,5 +1,13 @@
 import type { DetectedBarcode } from './barcode-detector.type'
-import type { OnDecode, OnDecodeError, ScanArea, WorkerRequest, WorkerResponse } from './barcode-scanner.types'
+import type {
+    OnDecode,
+    OnDecodeError,
+    ScanArea,
+    WorkerRequest,
+    WorkerResponse,
+} from './barcode-scanner.types'
+
+import { getVideoPosition, getVideoScaledSize } from './utils'
 
 class BarcodeScanner {
     private calcScanArea: (video: HTMLVideoElement) => ScanArea
@@ -113,7 +121,9 @@ class BarcodeScanner {
         /**
          * Setup worker
          */
-        this.worker = new Worker(new URL('./barcode-scanner.worker.ts', import.meta.url), { type: 'module' })
+        this.worker = new Worker(new URL('./barcode-scanner.worker.ts', import.meta.url), {
+            type: 'module',
+        })
     }
 
     public decode(imageData: ImageData): Promise<DetectedBarcode | null> {
@@ -127,7 +137,9 @@ class BarcodeScanner {
         return new Promise((res, rej) => {
             let timeout: ReturnType<typeof setTimeout> = 0
 
-            const handleWorkerResponse = ({ data: { data, uuid } }: MessageEvent<WorkerResponse>) => {
+            const handleWorkerResponse = ({
+                data: { data, uuid },
+            }: MessageEvent<WorkerResponse>) => {
                 if (uuid !== requestId) {
                     return
                 }
@@ -198,109 +210,45 @@ class BarcodeScanner {
     }
 
     public getScanAreaPosition(scanArea: ScanArea = this.scanArea): ScanArea {
-        const computedStyle = window.getComputedStyle(this.video)
         const isMirrored = /scaleX\(-1\)/.test(this.video.style.transform)
-        const objectFit = computedStyle.objectFit
-        const objectPosition = computedStyle.objectPosition
-        const elementOffsetX = this.video.offsetLeft
-        const elementOffsetY = this.video.offsetTop
-        const elementHeight = this.video.offsetHeight
         const elementWidth = this.video.offsetWidth
-        const elementAspectRatio = elementWidth / elementHeight
+        const elementHeight = this.video.offsetHeight
         const videoHeight = this.video.videoHeight
         const videoWidth = this.video.videoWidth
-        const videoAspectRatio = videoWidth / videoHeight
-        const areaWidth = scanArea.width || videoWidth
-        const areaHeight = scanArea.height || videoHeight
-        const areaX = scanArea.x || 0
-        const areaY = scanArea.y || 0
+        const videoScaledSize = getVideoScaledSize(this.video)
+        const videoPosition = getVideoPosition(this.video, videoScaledSize)
 
-        let scaledHeight: number
-        let scaledWidth: number
-
-        switch (objectFit) {
-            case 'contain':
-            case 'cover': {
-                const limitedByHeight =
-                    objectFit === 'contain'
-                        ? videoAspectRatio < elementAspectRatio
-                        : videoAspectRatio > elementAspectRatio
-                // prettier-ignore
-                scaledHeight = limitedByHeight
-                    ? elementHeight
-                    : elementWidth / videoAspectRatio
-                // prettier-ignore
-                scaledWidth = limitedByHeight
-                    ? elementHeight * videoAspectRatio
-                    : elementWidth
-                break
-            }
-            case 'none': {
-                scaledHeight = videoHeight
-                scaledWidth = videoWidth
-                break
-            }
-            case 'scale-down': {
-                const limitedByHeight = videoAspectRatio < elementAspectRatio
-                // prettier-ignore
-                scaledHeight = Math.min(
-                    limitedByHeight
-                        ? elementWidth / videoAspectRatio
-                        : elementHeight,
-                    videoHeight
-                )
-                // prettier-ignore
-                scaledWidth = Math.min(
-                    limitedByHeight
-                        ? elementHeight * videoAspectRatio
-                        : elementWidth,
-                    videoWidth
-                )
-                break
-            }
-            default: {
-                scaledHeight = elementHeight
-                scaledWidth = elementWidth
-                break
-            }
-        }
-
-        // prettier-ignore
-        const [
-            positionX,
-            positionY
-        ] = objectPosition
-            .split(' ')
-            .map((part, index) =>
-                part.endsWith('%')
-                    ? ((index === 0 ? elementWidth - scaledWidth : elementHeight - scaledHeight) * parseFloat(part)) /
-                      100
-                    : parseFloat(part),
-            )
-
-        const areaOffsetX = ((isMirrored ? areaX : videoWidth - areaX - areaWidth) / videoWidth) * scaledWidth
-        const areaOffsetY = (areaY / videoHeight) * scaledHeight
-        const scaleX = scaledWidth / videoWidth
-        const scaleY = scaledHeight / videoHeight
-
-        // prettier-ignore
-        return {
-            height: Math.min(
-                areaHeight * scaleY,
-                elementHeight,
-            ),
-            width: Math.min(
-                areaWidth * scaleX,
+        const x = Math.max(
+            0,
+            Math.min(
+                isMirrored
+                    ? videoPosition.x +
+                          ((videoWidth - scanArea.x) / videoWidth) * videoScaledSize.width
+                    : videoPosition.x + (scanArea.x / videoWidth) * videoScaledSize.width,
                 elementWidth,
             ),
-            x: Math.max(
-                elementOffsetX + (isMirrored ? positionX : elementWidth - scaledWidth - positionX) + areaOffsetX,
-                0,
+        )
+        const y = Math.max(
+            0,
+            Math.min(
+                videoPosition.y + (scanArea.y / videoHeight) * videoScaledSize.height,
+                elementHeight,
             ),
-            y: Math.max(
-                elementOffsetY + positionY + areaOffsetY,
-                0,
-            ),
+        )
+        const width = Math.min(
+            (scanArea.width / videoWidth) * videoScaledSize.width,
+            elementWidth - x,
+        )
+        const height = Math.min(
+            (scanArea.height / videoHeight) * videoScaledSize.height,
+            elementHeight - y,
+        )
+
+        return {
+            height: Math.max(0, height),
+            width: Math.max(0, width),
+            x,
+            y,
         }
     }
 
@@ -311,7 +259,9 @@ class BarcodeScanner {
             return status.state === 'granted'
         } catch {
             const devices = await navigator.mediaDevices.enumerateDevices()
-            const cameras = devices.filter((device) => device.deviceId && device.kind === 'videoinput')
+            const cameras = devices.filter(
+                (device) => device.deviceId && device.kind === 'videoinput',
+            )
 
             return cameras.length > 0
         }
@@ -343,14 +293,22 @@ class BarcodeScanner {
         this.videoPaused = true
     }
 
-    public async start({ facingMode = 'environment' }: { facingMode?: 'environment' | 'user' } = {}): Promise<void> {
+    public async start({
+        facingMode = 'environment',
+    }: {
+        facingMode?: 'environment' | 'user'
+    } = {}): Promise<void> {
         const hasAccess = await this.getCameraAccess()
 
         if (!hasAccess) {
             throw new Error('No camera access')
         }
 
-        if (this.video.srcObject instanceof MediaStream && this.videoActive && this.videoPaused === false) {
+        if (
+            this.video.srcObject instanceof MediaStream &&
+            this.videoActive &&
+            this.videoPaused === false
+        ) {
             return
         }
 
@@ -429,7 +387,12 @@ class BarcodeScanner {
                 this.canvas.height,
             )
 
-            const imageData = this.canvasContext.getImageData(0, 0, this.canvas.width, this.canvas.height)
+            const imageData = this.canvasContext.getImageData(
+                0,
+                0,
+                this.canvas.width,
+                this.canvas.height,
+            )
 
             if (this.debug) {
                 window.dispatchEvent(
@@ -472,4 +435,4 @@ class BarcodeScanner {
     }
 }
 
-export default BarcodeScanner
+export { BarcodeScanner }

@@ -1,4 +1,4 @@
-import BarcodeScanner from './lib/barcode-scanner'
+import { BarcodeScanner } from './lib'
 import './main.css'
 
 const video = document.querySelector<HTMLVideoElement>('[data-id="video"]')
@@ -26,10 +26,22 @@ if (video && videoRenderer) {
 
             const scanAreaPosition = area ?? barcodeScanner.getScanAreaPosition()
 
-            document.documentElement.style.setProperty('--barcode-scanner-area-x', `${scanAreaPosition.x}px`)
-            document.documentElement.style.setProperty('--barcode-scanner-area-y', `${scanAreaPosition.y}px`)
-            document.documentElement.style.setProperty('--barcode-scanner-area-width', `${scanAreaPosition.width}px`)
-            document.documentElement.style.setProperty('--barcode-scanner-area-height', `${scanAreaPosition.height}px`)
+            document.documentElement.style.setProperty(
+                '--barcode-scanner-area-x',
+                `${scanAreaPosition.x}px`,
+            )
+            document.documentElement.style.setProperty(
+                '--barcode-scanner-area-y',
+                `${scanAreaPosition.y}px`,
+            )
+            document.documentElement.style.setProperty(
+                '--barcode-scanner-area-width',
+                `${scanAreaPosition.width}px`,
+            )
+            document.documentElement.style.setProperty(
+                '--barcode-scanner-area-height',
+                `${scanAreaPosition.height}px`,
+            )
 
             if (data) {
                 resultValue.textContent = data
