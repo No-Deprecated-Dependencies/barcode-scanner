@@ -29,7 +29,9 @@ async function decode(imageData: ImageData): Promise<DetectedBarcode | null> {
  * @returns The detected barcode
  */
 function decodeFallback(imageData: ImageData): DetectedBarcode | null {
-    const result = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })
+    const result = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'dontInvert',
+    })
 
     if (!result) {
         return null
@@ -53,7 +55,9 @@ function decodeFallback(imageData: ImageData): DetectedBarcode | null {
  * @param worker - The worker
  * @returns The barcode detector
  */
-function getBarcodeDetector(worker: { BarcodeDetector: BarcodeDetector } & Worker): BarcodeDetector {
+function getBarcodeDetector(
+    worker: { BarcodeDetector: BarcodeDetector } & Worker,
+): BarcodeDetector {
     if (barcodeDetector === null) {
         barcodeDetector = new worker.BarcodeDetector({ formats: ['qr_code'] })
     }
@@ -66,7 +70,9 @@ function getBarcodeDetector(worker: { BarcodeDetector: BarcodeDetector } & Worke
  * @param worker - The worker
  * @returns Whether the barcode detector is available
  */
-function isBarcodeDetectorAvailable(worker: Worker): worker is { BarcodeDetector: BarcodeDetector } & Worker {
+function isBarcodeDetectorAvailable(
+    worker: Worker,
+): worker is { BarcodeDetector: BarcodeDetector } & Worker {
     return 'BarcodeDetector' in worker
 }
 
@@ -74,16 +80,19 @@ function isBarcodeDetectorAvailable(worker: Worker): worker is { BarcodeDetector
  * Listen for messages from the main thread
  * @param event - The event
  */
-worker.addEventListener('message', async ({ data: { data, uuid } }: MessageEvent<WorkerRequest>) => {
-    const response = { data: null, uuid } as WorkerResponse
+worker.addEventListener(
+    'message',
+    async ({ data: { data, uuid } }: MessageEvent<WorkerRequest>) => {
+        const response = { data: null, uuid } as WorkerResponse
 
-    try {
-        if (data) {
-            response.data = await decode(data)
+        try {
+            if (data) {
+                response.data = await decode(data)
+            }
+        } catch (error) {
+            console.error(error)
         }
-    } catch (error) {
-        console.error(error)
-    }
 
-    worker.postMessage(response)
-})
+        worker.postMessage(response)
+    },
+)

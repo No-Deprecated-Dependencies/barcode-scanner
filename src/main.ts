@@ -1,4 +1,4 @@
-import { BarcodeScanner, convertElementAreaToVideoArea } from './lib'
+import { BarcodeScanner, utils } from './lib'
 import './main.css'
 
 const video = document.querySelector<HTMLVideoElement>('[data-id="video"]')
@@ -52,7 +52,7 @@ if (video && videoRenderer) {
             calcScanArea(video) {
                 const size = (2 / 3) * Math.min(video.offsetWidth, video.offsetHeight)
 
-                return convertElementAreaToVideoArea(video, {
+                return utils.convertToVideoArea(video, {
                     height: size,
                     width: size,
                     x: (video.offsetWidth - size) / 2,

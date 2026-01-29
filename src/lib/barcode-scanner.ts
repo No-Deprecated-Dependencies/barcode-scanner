@@ -7,7 +7,7 @@ import type {
     WorkerResponse,
 } from './barcode-scanner.types'
 
-import { convertVideoAreaToElementArea } from './utils'
+import { convertToElementArea } from './utils'
 
 class BarcodeScanner {
     private calcScanArea: (video: HTMLVideoElement) => ScanArea
@@ -362,7 +362,7 @@ class BarcodeScanner {
 
                         this.onDecode(
                             data.rawValue,
-                            convertVideoAreaToElementArea(this.video, {
+                            convertToElementArea(this.video, {
                                 height: Math.max(...cornerPointsY) - Math.min(...cornerPointsY),
                                 width: Math.max(...cornerPointsX) - Math.min(...cornerPointsX),
                                 x: Math.min(...cornerPointsX) + this.scanArea.x,
@@ -370,10 +370,7 @@ class BarcodeScanner {
                             }),
                         )
                     } else {
-                        this.onDecode(
-                            null,
-                            convertVideoAreaToElementArea(this.video, this.scanArea),
-                        )
+                        this.onDecode(null, convertToElementArea(this.video, this.scanArea))
                     }
                 })
                 .catch(() => {

@@ -1,4 +1,10 @@
-function getVideoPosition(video: HTMLVideoElement, scaledSize: { height: number; width: number }) {
+function getVideoRenderedOffset(
+    video: HTMLVideoElement,
+    scaledSize: {
+        height: number
+        width: number
+    },
+) {
     const computedStyle = window.getComputedStyle(video)
 
     // prettier-ignore
@@ -23,4 +29,4 @@ function getVideoPosition(video: HTMLVideoElement, scaledSize: { height: number;
     }
 }
 
-export { getVideoPosition }
+export { getVideoRenderedOffset }

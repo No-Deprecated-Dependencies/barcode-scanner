@@ -1,4 +1,4 @@
-function getVideoScaledSize(video: HTMLVideoElement): { height: number; width: number } {
+function getVideoRenderedSize(video: HTMLVideoElement) {
     const computedStyle = window.getComputedStyle(video)
     const eAspectRatio = video.offsetWidth / video.offsetHeight
     const vAspectRatio = video.videoWidth / video.videoHeight
@@ -56,4 +56,4 @@ function getVideoScaledSize(video: HTMLVideoElement): { height: number; width: n
     }
 }
 
-export { getVideoScaledSize }
+export { getVideoRenderedSize }
