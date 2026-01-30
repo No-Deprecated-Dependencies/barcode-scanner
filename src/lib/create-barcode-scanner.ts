@@ -1,11 +1,5 @@
 import { createWatchable } from './create-watchable'
-import {
-    getCameraAccess,
-    getScanArea,
-    type ScanArea,
-    translateAreaToVideoRender,
-    wait,
-} from './utils'
+import { getCameraAccess, getScanArea, type ScanArea, wait } from './utils'
 import { decode, install } from './worker'
 
 function createBarcodeScanner(
@@ -121,14 +115,12 @@ function createBarcodeScanner(
 
         state.requestFrame(() => {
             if (
+                // Skip if the worker is not ready
+                state.isReady === false ||
                 // Skip if the time since the last request frame is less than the scan rate
                 performance.now() - state.decodeFrameRequestTimestamp < 1000 / state.scanRate ||
                 // Skip if the frame is already processed
                 state.isDecodeFrameProcessed ||
-                // Skip if the video is ended
-                state.video.ended ||
-                // Skip if the video is paused
-                state.video.paused ||
                 // Skip if the video is not ready
                 state.video.readyState <= 1
             ) {
@@ -178,15 +170,12 @@ function createBarcodeScanner(
                         const cornerPointsX = data.cornerPoints.map((p) => p.x)
                         const cornerPointsY = data.cornerPoints.map((p) => p.y)
 
-                        onDecodeSuccess(
-                            data.rawValue,
-                            translateAreaToVideoRender(state.video, {
-                                height: Math.max(...cornerPointsY) - Math.min(...cornerPointsY),
-                                width: Math.max(...cornerPointsX) - Math.min(...cornerPointsX),
-                                x: Math.min(...cornerPointsX) + state.scanArea.x,
-                                y: Math.min(...cornerPointsY) + state.scanArea.y,
-                            }),
-                        )
+                        onDecodeSuccess(data.rawValue, {
+                            height: Math.max(...cornerPointsY) - Math.min(...cornerPointsY),
+                            width: Math.max(...cornerPointsX) - Math.min(...cornerPointsX),
+                            x: Math.min(...cornerPointsX) + state.scanArea.x,
+                            y: Math.min(...cornerPointsY) + state.scanArea.y,
+                        })
                     } else {
                         onDecodeFailure()
                     }
