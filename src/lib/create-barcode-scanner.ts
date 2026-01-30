@@ -4,14 +4,11 @@ import { decode, install } from './worker'
 
 type State = {
     calcScanArea: (video: HTMLVideoElement) => ScanArea
-    canvas: HTMLCanvasElement
-    canvasContext: CanvasRenderingContext2D
     decodeFrameTs: number
     isDecodeFrameProcessed: boolean
     isDestroyed: boolean
     isVideoActive: boolean
     isVideoPaused: boolean
-    requestFrame: (callback: () => void) => number
     scanArea: ScanArea
     scanRate: number
     video: HTMLVideoElement
@@ -20,7 +17,6 @@ type State = {
 
 async function createBarcodeScanner(
     video: HTMLVideoElement,
-
     {
         calcScanArea,
         debug,
@@ -50,27 +46,26 @@ async function createBarcodeScanner(
     }
 
     const canvas = document.createElement('canvas')
-    const canvasContext = canvas.getContext('2d', { willReadFrequently: true })
+    const canvasContext = canvas.getContext('2d', { willReadFrequently: true })!
 
     if (!canvasContext) {
         throw new Error('canvas context is not supported')
     }
 
-    const { state, watch } = createWatchable<State>({
+    const { state } = createWatchable<State>({
         calcScanArea: calcScanArea ?? getScanArea,
-        canvas,
-        canvasContext,
         decodeFrameTs: performance.now(),
         isDecodeFrameProcessed: false,
         isDestroyed: false,
         isVideoActive: false,
         isVideoPaused: false,
-        requestFrame: video.requestVideoFrameCallback?.bind(video) ?? requestAnimationFrame,
         scanArea: getScanArea(video),
         scanRate: 24,
         video,
         worker: null,
     })
+
+    const requestFrame = video.requestVideoFrameCallback?.bind(video) ?? requestAnimationFrame
 
     state.worker = await install()
 
@@ -88,7 +83,7 @@ async function createBarcodeScanner(
             return
         }
 
-        state.requestFrame(() => {
+        requestFrame(() => {
             if (
                 // Skip if the time since the last request frame is less than the scan rate
                 performance.now() - state.decodeFrameTs < 1000 / state.scanRate ||
@@ -125,10 +120,10 @@ async function createBarcodeScanner(
                 )
             }
 
-            state.canvas.height = state.scanArea.height
-            state.canvas.width = state.scanArea.width
-            state.canvasContext.clearRect(0, 0, state.canvas.width, state.canvas.height)
-            state.canvasContext.drawImage(
+            canvas.height = state.scanArea.height
+            canvas.width = state.scanArea.width
+            canvasContext.clearRect(0, 0, canvas.width, canvas.height)
+            canvasContext.drawImage(
                 state.video,
                 state.scanArea.x,
                 state.scanArea.y,
@@ -136,16 +131,11 @@ async function createBarcodeScanner(
                 state.scanArea.height,
                 0,
                 0,
-                state.canvas.width,
-                state.canvas.height,
+                canvas.width,
+                canvas.height,
             )
 
-            const imageData = state.canvasContext.getImageData(
-                0,
-                0,
-                state.canvas.width,
-                state.canvas.height,
-            )
+            const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height)
 
             if (debug) {
                 window.dispatchEvent(
@@ -234,20 +224,20 @@ async function createBarcodeScanner(
 
     function pause() {
         state.video.pause()
-        state.canvas.height = state.video.videoHeight
-        state.canvas.width = state.video.videoWidth
-        state.canvasContext.drawImage(
+        canvas.height = state.video.videoHeight
+        canvas.width = state.video.videoWidth
+        canvasContext.drawImage(
             state.video,
             0,
             0,
-            state.canvas.width,
-            state.canvas.height,
+            canvas.width,
+            canvas.height,
             0,
             0,
-            state.canvas.width,
-            state.canvas.height,
+            canvas.width,
+            canvas.height,
         )
-        state.canvas.toBlob(
+        canvas.toBlob(
             (blob) => {
                 if (blob) {
                     if (state.video.poster.startsWith('blob:')) {
@@ -342,7 +332,6 @@ async function createBarcodeScanner(
         start,
         state,
         stop,
-        watch,
     }
 }
 
