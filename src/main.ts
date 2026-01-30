@@ -63,14 +63,14 @@ if (video && videoRenderer) {
             return
         }
 
-        document.documentElement.style.setProperty('--barcode-scanner-area-x', `${area.x}px`)
-        document.documentElement.style.setProperty('--barcode-scanner-area-y', `${area.y}px`)
+        document.documentElement.style.setProperty('--barcode-scanner-result-area-x', `${area.x}px`)
+        document.documentElement.style.setProperty('--barcode-scanner-result-area-y', `${area.y}px`)
         document.documentElement.style.setProperty(
-            '--barcode-scanner-area-width',
+            '--barcode-scanner-result-area-width',
             `${area.width}px`,
         )
         document.documentElement.style.setProperty(
-            '--barcode-scanner-area-height',
+            '--barcode-scanner-result-area-height',
             `${area.height}px`,
         )
 
@@ -85,6 +85,11 @@ if (video && videoRenderer) {
         if (!resultTitle || !resultValue) {
             return
         }
+
+        document.documentElement.style.removeProperty('--barcode-scanner-result-area-x')
+        document.documentElement.style.removeProperty('--barcode-scanner-result-area-y')
+        document.documentElement.style.removeProperty('--barcode-scanner-result-area-width')
+        document.documentElement.style.removeProperty('--barcode-scanner-result-area-height')
 
         resultValue.textContent = 'Decode error'
     }

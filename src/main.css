@@ -37,9 +37,10 @@ body {
 
 .demo__video-overlay {
     position: absolute;
-    inset: var(--barcode-scanner-area-y) auto auto var(--barcode-scanner-area-x);
-    width: var(--barcode-scanner-area-width);
-    height: var(--barcode-scanner-area-height);
+    inset: var(--barcode-scanner-result-area-y, var(--barcode-scanner-area-y)) auto auto
+        var(--barcode-scanner-result-area-x, var(--barcode-scanner-area-x));
+    width: var(--barcode-scanner-result-area-width, var(--barcode-scanner-area-width));
+    height: var(--barcode-scanner-result-area-height, var(--barcode-scanner-area-height));
     pointer-events: none;
     border: 2px dashed #fff;
     border-radius: 16px;

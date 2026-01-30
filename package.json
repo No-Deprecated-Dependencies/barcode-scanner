@@ -1,6 +1,6 @@
 {
     "name": "@nddeps/barcode-scanner",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "private": false,
     "keywords": [
         "barcode",
@@ -19,6 +19,9 @@
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js"
+        },
+        "./worker": {
+            "import": "./dist/worker.js"
         }
     },
     "main": "./dist/index.js",
